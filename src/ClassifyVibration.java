@@ -35,6 +35,8 @@ public class ClassifyVibration extends PApplet {
 	String[] classNames = {"neutral", "interaction1", "interaction2"};
 	int classIndex = 0;
 	int dataCount = 0;
+	boolean isRecording = false;
+	List<String> classificationList = new ArrayList<>();
 	boolean moreTraining = false;
 	File path = new File("C:\\Users\\phili\\OneDrive\\Desktop\\Electrical Engineering MS - UCLA\\Fall 2023\\209AS - Engineering Interactive Systems\\Bakeoff Project\\Models\\");
 
@@ -131,9 +133,17 @@ public class ClassifyVibration extends PApplet {
 
 		if (key == CODED && keyCode == DOWN) {
 			classIndex = (classIndex + 1) % classNames.length;
-		}
-		
-		else if (key == 't') {
+		}else if (key == ' ') {
+			if (isRecording) {
+				isRecording = false;
+				println("Recording stopped.");
+				outputClassifications();
+			} else {
+				isRecording = true;
+				classificationList.clear();
+				println("Recording started.");
+			}
+		}else if (key == 't') {
 			if(classifier == null) {
 				println("Start training ...");
 				classifier = new MLClassifier();
@@ -183,6 +193,34 @@ public class ClassifyVibration extends PApplet {
 		}
 	}
 	
+		public void outputClassifications() {
+			String mostFrequent = mostFrequentClassification();
+			if (mostFrequent != null) {
+				println("Most frequent classification: " + mostFrequent);
+			}
+			classificationList.clear();  // Clear the list for the next recording session
+		}
+
+		public String mostFrequentClassification() {
+			Map<String, Integer> frequencyMap = new HashMap<>();
+			for (String classification : classificationList) {
+				frequencyMap.put(classification, frequencyMap.getOrDefault(classification, 0) + 1);
+			}
+
+			// If there are other classifications apart from "neutral", remove "neutral"
+			if (frequencyMap.size() > 1 && frequencyMap.containsKey("neutral")) {
+				frequencyMap.remove("neutral");
+			}
+
+			Map.Entry<String, Integer> mostFrequentEntry = null;
+			for (Map.Entry<String, Integer> entry : frequencyMap.entrySet()) {
+				if (mostFrequentEntry == null || entry.getValue().compareTo(mostFrequentEntry.getValue()) > 0) {
+					mostFrequentEntry = entry;
+				}
+			}
+
+			return mostFrequentEntry != null ? mostFrequentEntry.getKey() : null;
+		}
 	
 	public void saveModel(MLClassifier classifier, String name) throws Exception {
         ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(path + name + ".model"));
